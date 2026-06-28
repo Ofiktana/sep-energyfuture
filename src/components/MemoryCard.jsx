@@ -14,7 +14,7 @@ export default function MemoryCard({ card, index, isMismatch, onClick }) {
     .join(' ');
 
   return (
-    <div className={classNames} title={'Click to flip'} onClick={() => onClick(index)}>
+    <div className={classNames}  onClick={() => onClick(index)}>
       <div className="card-inner">
         <div className="card-face card-back">
           <CircuitSVG />

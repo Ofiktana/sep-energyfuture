@@ -1,0 +1,16 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Training/dev rules — tighten before production (e.g. Firebase Auth + server rules).
+    match /Users/{userId} {
+      allow read, write: if true;
+    }
+    match /Scores/{scoreId} {
+      allow read, write: if true;
+    }
+    match /season/{docId} {
+      allow read, write: if true;
+    }
+  }
+}

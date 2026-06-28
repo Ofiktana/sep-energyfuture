@@ -1,5 +1,6 @@
-import { useMemo } from 'react';
-import { getCurrentSeason, getLeaderboardEntries } from '../services/db';
+import { useEffect, useState } from 'react';
+import { getLeaderboardEntries } from '../services/scoresService';
+import { getCurrentSeason } from '../services/seasonService';
 import { formatTime } from '../utils/helpers';
 
 function rankLabel(index) {
@@ -10,22 +11,54 @@ function rankLabel(index) {
 }
 
 export default function LeaderboardTab({ refreshKey }) {
-  const currentSeason = getCurrentSeason();
+  const [currentSeason, setCurrentSeason] = useState('');
+  const [entries, setEntries] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const entries = useMemo(
-    () => getLeaderboardEntries(currentSeason),
-    [currentSeason, refreshKey]
-  );
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadLeaderboard() {
+      setIsLoading(true);
+      setError('');
+      try {
+        const season = await getCurrentSeason();
+        const scores = await getLeaderboardEntries(season);
+        if (!cancelled) {
+          setCurrentSeason(season);
+          setEntries(scores);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err.message || 'Unable to load leaderboard.');
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadLeaderboard();
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshKey]);
 
   return (
     <>
       <div className="lb-header">🏆 Leaderboard</div>
       <div className="lb-sub">
-        Season: <strong style={{ color: 'var(--lemon)' }}>{currentSeason}</strong> · Top{' '}
+        Season: <strong style={{ color: 'var(--lemon)' }}>{currentSeason || '…'}</strong> · Top{' '}
         {Math.min(entries.length, 20)} champions
       </div>
 
-      {entries.length === 0 ? (
+      {isLoading ? (
+        <div className="lb-empty">Loading leaderboard…</div>
+      ) : error ? (
+        <div className="form-error">{error}</div>
+      ) : entries.length === 0 ? (
         <div className="lb-empty">
           <div style={{ fontSize: '2.5rem', marginBottom: '10px' }}>🌱</div>
           <div style={{ fontWeight: 600, marginBottom: '4px' }}>No scores for this season</div>
@@ -61,16 +94,6 @@ export default function LeaderboardTab({ refreshKey }) {
           </table>
         </div>
       )}
-
-      {/* <div className="formula-note">
-        <strong style={{ color: 'rgba(249,224,118,0.7)' }}>Score formula:</strong>{' '}
-        <code>max(0, 10,000 − Moves × 100 − Seconds × 10)</code>
-        — fewer moves and faster time earns a higher score.
-        <span style={{ display: 'block', marginTop: '4px' }}>
-          🏷️ Scores are tagged with the active season:{' '}
-          <strong style={{ color: 'var(--lemon)' }}>{currentSeason}</strong>
-        </span>
-      </div> */}
     </>
   );
 }

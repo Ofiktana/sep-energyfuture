@@ -233,6 +233,42 @@
             border-radius: 8px;
             margin-top: 10px;
         }
+        .form-success {
+            background: rgba(34,197,94,0.12);
+            border: 1px solid rgba(34,197,94,0.3);
+            color: var(--match-green);
+            font-size: 0.82rem;
+            padding: 10px 14px;
+            border-radius: 8px;
+        }
+        .password-requirements {
+            list-style: none;
+            margin-top: 10px;
+            padding: 10px 12px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--forest-edge);
+            border-radius: 8px;
+        }
+        .password-requirement {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.78rem;
+            padding: 3px 0;
+            color: var(--text-dim);
+            transition: color 0.15s;
+        }
+        .password-requirement.passed {
+            color: var(--match-green);
+        }
+        .password-requirement.failed {
+            color: var(--text-muted);
+        }
+        .password-requirement-icon {
+            font-size: 0.7rem;
+            width: 14px;
+            flex-shrink: 0;
+        }
         .auth-footer-note {
             text-align: center;
             font-size: 0.75rem;

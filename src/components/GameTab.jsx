@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { getCurrentSeason, saveScore } from '../services/db';
-import { calculateScore, formatTime, generateCards, generateId } from '../utils/helpers';
+import { saveScore } from '../services/scoresService';
+import { getCurrentSeason } from '../services/seasonService';
+import { calculateScore, formatTime, generateCards } from '../utils/helpers';
 import MemoryCard from './MemoryCard';
 import VictoryBanner from './VictoryBanner';
 
@@ -13,6 +14,7 @@ export default function GameTab({ user, onScoreSaved }) {
   const [isLocked, setIsLocked] = useState(false);
   const [isGameOver, setIsGameOver] = useState(false);
   const [score, setScore] = useState(0);
+  const [victorySeason, setVictorySeason] = useState('');
   const timerRef = useRef(null);
   const cardsRef = useRef(cards);
   const flippedRef = useRef(flipped);
@@ -52,6 +54,7 @@ export default function GameTab({ user, onScoreSaved }) {
     setIsLocked(false);
     setIsGameOver(false);
     setScore(0);
+    setVictorySeason('');
     startTimer();
   }, [clearTimer, startTimer]);
 
@@ -61,24 +64,29 @@ export default function GameTab({ user, onScoreSaved }) {
   }, [startTimer, clearTimer]);
 
   const handleVictory = useCallback(
-    (finalMoves, finalTime) => {
+    async (finalMoves, finalTime) => {
       const finalScore = calculateScore(finalMoves, finalTime);
       setScore(finalScore);
       setIsGameOver(true);
       clearTimer();
 
-      saveScore({
-        id: generateId(),
-        userId: user.id,
-        fullName: user.fullName,
-        affiliation: user.affiliation,
-        role: user.role,
-        score: finalScore,
-        moves: finalMoves,
-        time: finalTime,
-        season: getCurrentSeason(),
-      });
-      onScoreSaved?.();
+      try {
+        const season = await getCurrentSeason();
+        setVictorySeason(season);
+        await saveScore({
+          userId: user.id,
+          fullName: user.fullName,
+          affiliation: user.affiliation,
+          role: user.role,
+          score: finalScore,
+          moves: finalMoves,
+          time: finalTime,
+          season,
+        });
+        onScoreSaved?.();
+      } catch (err) {
+        console.error('Failed to save score:', err);
+      }
     },
     [user, clearTimer, onScoreSaved]
   );
@@ -184,7 +192,7 @@ export default function GameTab({ user, onScoreSaved }) {
           moves={moves}
           time={time}
           score={score}
-          season={getCurrentSeason()}
+          season={victorySeason}
         />
       )}
     </>

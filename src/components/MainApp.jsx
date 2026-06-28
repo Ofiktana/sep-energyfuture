@@ -72,7 +72,7 @@ export default function MainApp() {
         </div>
         {isAdmin && (
           <div className={`tab-content ${currentTab === 'admin' ? 'active' : ''}`}>
-            <AdminTab onDataChange={handleDataChange} />
+            <AdminTab refreshKey={refreshKey} onDataChange={handleDataChange} />
           </div>
         )}
       </div>

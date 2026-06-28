@@ -1,11 +1,9 @@
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import {
-  addUser,
-  findUserByCredentials,
-  findUserByName,
-  getDB,
-} from '../services/db';
-import { generateId } from '../utils/helpers';
+  createUser,
+  findUserByUsernameAndPassword,
+  toSessionUser,
+} from '../services/usersService';
 
 const SESSION_KEY = 'energy_user';
 
@@ -16,11 +14,7 @@ function loadSessionUser() {
   if (!saved) return null;
 
   try {
-    const user = JSON.parse(saved);
-    const exists = getDB().users.find((u) => u.id === user.id);
-    if (exists) return exists;
-    sessionStorage.removeItem(SESSION_KEY);
-    return null;
+    return JSON.parse(saved);
   } catch {
     sessionStorage.removeItem(SESSION_KEY);
     return null;
@@ -30,32 +24,24 @@ function loadSessionUser() {
 export function AppProvider({ children }) {
   const [user, setUser] = useState(() => loadSessionUser());
 
-  const login = useCallback((fullName, password) => {
-    const found = findUserByCredentials(fullName, password);
+  const login = useCallback(async (username, password) => {
+    const found = await findUserByUsernameAndPassword(username, password);
     if (!found) {
-      throw new Error('Invalid credentials. Please check your name and password.');
+      throw new Error('Invalid credentials. Please check your username and password.');
     }
-    setUser(found);
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify(found));
+
+    const sessionUser = toSessionUser(found);
+    setUser(sessionUser);
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(sessionUser));
+    return sessionUser;
   }, []);
 
-  const signup = useCallback((fullName, affiliation, role, password) => {
-    if (findUserByName(fullName)) {
-      throw new Error('A user with that name already exists. Please log in.');
-    }
-
-    const newUser = {
-      id: generateId(),
-      fullName: fullName.trim(),
-      affiliation: affiliation.trim(),
-      role: role.trim(),
-      password,
-      isAdmin: false,
-    };
-
-    addUser(newUser);
-    setUser(newUser);
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify(newUser));
+  const signup = useCallback(async ({ fullName, username, affiliation, role, password }) => {
+    const newUser = await createUser({ fullName, username, affiliation, role, password });
+    const sessionUser = toSessionUser(newUser);
+    setUser(sessionUser);
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(sessionUser));
+    return sessionUser;
   }, []);
 
   const logout = useCallback(() => {
